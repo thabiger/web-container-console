@@ -32,7 +32,7 @@ Optional parameters can be passed through environment variables:
 ### Detailed steps:
 
 1. Run the Docker image within your infrastructure.
-2. Open your web browser and navigate to `http://localhost:5000`.
+2. Open your web browser and navigate to `http://<deployment_address>:5000`.
 3. If `SECURE` is set to `1`, you will be redirected to the login page. Enter the secret key to authenticate(see Security section to learn how to obtain the key). 
 4. Once authenticated, you can execute shell commands and view their output in real-time.
 
