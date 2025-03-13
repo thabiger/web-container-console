@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Container Console</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #706a6a;
+            color: #FFBF00;
+            font-family: monospace;
+        }
+        h1 {
+            margin: 0;
+            padding: 10px;
+        }
+        #main-container {
+            display: flex;
+            width: 95%;
+            height: 90%;
+        }
+        #console-panel {
+            width: 80%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #console {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #FFBF00;
+            border: none;
+            outline: none;
+            resize: none;
+            padding: 10px;
+            box-sizing: border-box;
+            font-size: 14px;
+            spellcheck: false;
+        }
+        #info-panel {
+            width: 20%;
+            height: 100%;
+            background-color: #333;
+            color: #FFBF00;
+            padding: 10px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        footer {
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        footer a {
+            color: #CC9900;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Container Console</h1>
+    <div id="main-container">
+        <div id="console-panel">
+            <textarea id="console" rows="20" cols="80" spellcheck="false"></textarea><br>
+        </div>
+        <div id="info-panel">
+            <h2>About</h2>
+            <p>This application is designed for testing purposes within a container environment. It allows you to execute commands inside a container to test infrastructure requirements such as connectivity, permissions, and more.<br><br>
+            To facilitate this, it comes with pre-installed clients for AWS CLI, MySQL, PostgreSQL, and Redis.</p>
+            <h2>Usage</h2>
+            <p>Simply type your command in the console and press Enter to execute. Use Shift+Enter for multi-line commands.</p>
+            <h2>Additional Commands</h2>
+            <p><a href="#" onclick="clearConsole()">Clear</a></p>
+            <p><a href="#" onclick="copyAll()">Copy all</a></p>
+            <h2>Contact</h2>
+            <p>For more information, visit the <a href="https://github.com/thabiger/container-console">GitHub repository</a>.</p>
+            <h2 id="session-header" style="display: none;">Session</h2>
+            <p id="session-link" style="display: none;"><a href="/logout">Logout</a></p>
+            <script>
+                function isAuthenticated() {
+                    return document.cookie.split(';').some((item) => item.trim().startsWith('authenticated='));
+                }
+
+                if (isAuthenticated()) {
+                    document.getElementById('session-link').style.display = 'block';
+                    document.getElementById('session-header').style.display = 'block';
+                }
+            </script>
+        </div>
+    </div>
+    <footer>&copy; 2025, Tomasz Habiger <a href="mailto:tomasz.habiger@gmail.com">tomasz.habiger@gmail.com</a>, <a href="https://github.com/thabiger/container-console">GitHub</a></footer>
+    <script>
+        var socket = io();
+        let prompt = '> ';
+        let commandHistory = [];
+        let historyIndex = -1;
+        let completions = [];
+        let completionIndex = -1;
+
+        socket.on('command_output', function(data) {
+            var console = document.getElementById('console');
+            console.value += data.output + '\n> ';
+            console.scrollTop = console.scrollHeight;
+            completions = [];
+            completionIndex = -1;
+        });
+
+        socket.on('command_completions', function(data) {
+            completions = data.completions;
+            completionIndex = 0;
+            if (completions.length > 0) {
+                applyCompletion();
+            }
+        });
+
+        function applyCompletion() {
+            var console = document.getElementById('console');
+            var value = console.value;
+            var lastPromptIndex = value.lastIndexOf('> ');
+            var command = value.substring(lastPromptIndex + 2).trim();
+            var lastSpaceIndex = command.lastIndexOf(' ');
+            var prefix = command.substring(0, lastSpaceIndex + 1);
+            console.value = value.substring(0, lastPromptIndex + 2) + prefix + completions[completionIndex];
+        }
+
+        document.getElementById('console').addEventListener('keydown', function(event) {
+            var console = document.getElementById('console');
+            var value = console.value;
+            var lastPromptIndex = value.lastIndexOf(prompt);
+            var currentIndex = console.selectionStart;
+
+            if (event.key === 'Enter' && event.shiftKey) {
+                event.preventDefault();
+                console.value += '\n';
+                console.scrollTop = console.scrollHeight;
+            } else if (event.key === 'Enter') {
+                if (currentIndex > lastPromptIndex + prompt.length) {
+                    event.preventDefault();
+                    var command = value.substring(lastPromptIndex + prompt.length).trim();
+                    socket.emit('execute_command', {command: command});
+                    commandHistory.push(command);
+                    historyIndex = commandHistory.length;
+                    console.value += '\n';
+                    setTimeout(() => {
+                        console.focus();
+                    }, 0);
+                } else {
+                    event.preventDefault();
+                    console.selectionStart = console.selectionEnd = console.value.length;
+                }
+            } else if (event.key === 'Tab') {
+                event.preventDefault();
+                if (completions.length > 0) {
+                    completionIndex = (completionIndex + 1) % completions.length;
+                    applyCompletion();
+                } else {
+                    var command = value.substring(lastPromptIndex + prompt.length).trim();
+                    socket.emit('complete_command', {command: command});
+                }
+            } else if (event.key === 'Backspace') {
+                if (currentIndex > lastPromptIndex + prompt.length) {
+                    console.value = console.value.slice(0, currentIndex - 1) + console.value.slice(currentIndex);
+                    console.selectionStart = console.selectionEnd = currentIndex - 1;                
+                } else {
+                    event.preventDefault();
+                }
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    console.value = value.substring(0, lastPromptIndex + prompt.length) + commandHistory[historyIndex];
+                }
+            } else if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    console.value = value.substring(0, lastPromptIndex + prompt.length) + commandHistory[historyIndex];
+                } else {
+                    historyIndex = commandHistory.length;
+                    console.value = value.substring(0, lastPromptIndex + prompt.length);
+                }
+            } else if (event.ctrlKey && event.key === 'c') {
+                event.preventDefault();
+                console.value += '^C\n' + prompt;
+                console.scrollTop = console.scrollHeight;
+            } else {
+                if (currentIndex < lastPromptIndex + prompt.length) {
+                    event.preventDefault();
+                }
+            }
+        });
+
+        function clearConsole() {
+            var console = document.getElementById('console');
+            console.value = prompt;
+            console.focus();
+        }
+
+        function copyAll() {
+            var console = document.getElementById('console');
+            console.select();
+            document.execCommand('copy');
+            console.setSelectionRange(console.value.length, console.value.length);
+            console.focus();
+        }
+
+        // Ensure prompt is displayed when the console is empty
+        document.addEventListener('DOMContentLoaded', (event) => {
+            var console = document.getElementById('console');
+            if (console.value.trim() === '') {
+                console.value = prompt;
+            }
+        });
+    </script>
+</body>
+</html>

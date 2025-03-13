@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #706a6a;
+            color: #FFBF00;
+            font-family: monospace;
+        }
+        .login-container {
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 400px;
+        }
+        .login-container h2 {
+            margin: 0 0 20px 0;
+        }
+        .login-container input[type="password"],
+        .login-container input[type="submit"] {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .login-container input[type="password"] {
+            background-color: #555;
+            color: #FFBF00;
+        }
+        .login-container input[type="submit"] {
+            background-color: #FFBF00;
+            color: #333;
+            cursor: pointer;
+        }
+        .login-container input[type="submit"]:hover {
+            background-color: #CC9900;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Login</h2>
+        <form method="post" style="width: 100%; display: flex; flex-direction: column; align-items: center;" autocomplete="off">
+            <input type="password" name="secret" placeholder="Secret Key" required autocomplete="off">
+            <input type="submit" value="Login">
+        </form>
+    </div>
+</body>
+</html>
