@@ -2,6 +2,10 @@ name: Update Latest Tag
 
 on:
   workflow_dispatch:
+    inputs:
+        tag_name:
+          description: 'Tag name to update to latest'
+          required: true
 
 jobs:
   update-latest:
