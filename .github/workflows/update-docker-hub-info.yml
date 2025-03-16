@@ -1,0 +1,25 @@
+name: Update Docker Hub Repository
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+    - README.md
+    - .github/workflows/update-docker-hub-info.yml
+
+jobs:
+  update-dockerhub-repo:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Docker Hub Description
+      uses: peter-evans/dockerhub-description@v4
+      with:
+        username: "${{ vars.DOCKERHUB_USERNAME }}"
+        password: "${{ secrets.DOCKERHUB_TOKEN }}"
+        repository: "${{ vars.DOCKERHUB_USERNAME }}/web-container-console"
+        short-description: "A simple web-based console for interacting with a container"
