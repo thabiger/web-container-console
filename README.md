@@ -18,11 +18,11 @@ By default, the application does not require any authentication to work with. If
 
 Even though the image is meant to be run more in some kind of orchestrated infrastructure, like ECS, EKS, or any other container management infrastructure, knowing how to do a basic Docker run is still valuable when configuring those more specialized scenarios. So here it is:
 
-    docker run -d thabiger/web-container-console
+    docker run -d -p 5000:5000 thabiger/web-container-console
 
 Optional parameters can be passed through environment variables:
 
-    docker run -d \
+    docker run -d -p 5000:5000 \
       -e PORT=5000 \
       -e SECURE=1 \
       -e SECRET_KEY="secret" \
